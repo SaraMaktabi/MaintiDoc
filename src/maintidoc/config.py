@@ -22,5 +22,5 @@ COLLECTION_IMAGES = "maintidoc_images"   # embeddings CLIP
 # Modèles
 EMBED_MODEL_TEXT = "BAAI/bge-small-en-v1.5"          # 384d
 CLIP_MODEL       = "openai/clip-vit-base-patch32"    # 512d
-LLM_MODEL        = "qwen2.5:3b-instruct"
+LLM_MODEL        = "qwen2.5:7b"
 OLLAMA_URL       = "http://localhost:11434"

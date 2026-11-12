@@ -19,27 +19,43 @@ def extract_text_pages(pdf_path: str) -> list[dict]:
     return pages
 
 
+# src/maintidoc/extract.py
+import pymupdf as fitz  # ou import fitz si vous gardez l'ancien nom
+
 def extract_tables(pdf_path: str) -> list[dict]:
-    """Retourne une liste de dicts {page, table_index, table_markdown}."""
+    """
+    Extrait les tableaux avec PyMuPDF find_tables().
+    Essaie plusieurs stratégies pour maximiser la détection.
+    """
     tables = []
-    with pdfplumber.open(pdf_path) as pdf:
-        for i, page in enumerate(pdf.pages):
-            for t_idx, table in enumerate(page.extract_tables() or []):
-                if not table or len(table) < 2:
-                    continue
-                header = [str(c).strip() if c else "" for c in table[0]]
-                rows = [
-                    [str(c).strip() if c else "" for c in row]
-                    for row in table[1:]
-                    if any(row)
-                ]
-                md = "| " + " | ".join(header) + " |\n"
-                md += "|" + "|".join(["---"] * len(header)) + "|\n"
-                for row in rows:
-                    md += "| " + " | ".join(row) + " |\n"
-                tables.append(
-                    {"page": i + 1, "table_index": t_idx, "table_markdown": md}
-                )
+    doc = fitz.open(pdf_path)
+
+    for page_num, page in enumerate(doc, start=1):
+        # Essayer les stratégies dans l'ordre de pertinence pour les PDF LaTeX
+        found_tables = []
+        for strategy in ["lines", "lines_strict", "text"]:
+            try:
+                finder = page.find_tables(strategy=strategy)
+                if finder.tables:
+                    found_tables = finder.tables
+                    break  # on garde la première stratégie qui trouve quelque chose
+            except Exception as e:
+                print(f"[warn] page {page_num} strategy={strategy}: {e}")
+                continue
+
+        for t_idx, table in enumerate(found_tables):
+            try:
+                md = table.to_markdown()
+                if md and md.strip():
+                    tables.append({
+                        "page": page_num,
+                        "table_index": t_idx,
+                        "table_markdown": md,
+                    })
+            except Exception as e:
+                print(f"[skip] table page {page_num} #{t_idx}: {e}")
+
+    doc.close()
     return tables
 
 

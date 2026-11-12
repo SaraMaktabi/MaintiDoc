@@ -47,9 +47,19 @@
   ],
   "tables": [
     {
+      "page": 6,
+      "table_index": 0,
+      "table_markdown": "|LayerType|ComplexityperLayer|Sequential<br>Operations|MaximumPathLength|\n|---|---|---|---|\n|Self-Attention<br>Recurrent<br>Convolutional<br>Self-Attention (restricted)|_O_(_n_2 _· d_)<br>_O_(_n · d_2)<br>_O_(_k · n · d_2)<br>_O_(_r · n · d_)|_O_(1)<br>_O_(_n_)<br>_O_(1)<br>_O_(1)|_O_(1)<br>_O_(_n_)<br>_O_(_logk_(_n_))<br>_O_(_n/r_)|\n\n"
+    },
+    {
+      "page": 8,
+      "table_index": 0,
+      "table_markdown": "|Model|BLEU<br>EN DE EN FR<br>- -|Col3|TrainingCost(FLOPs)<br>EN DE EN FR<br>- -|\n|---|---|---|---|\n|ByteNet [15]|23.75|||\n|Deep-Att + PosUnk [32]<br>GNMT + RL [31]<br>ConvS2S [8]<br>MoE[26]|24.6<br>25.16<br>26.03|39.2<br>39.92<br>40.46<br>40.56|1_._0_ ·_ 1020<br>2_._3_ ·_ 1019<br>1_._4_ ·_ 1020<br>9_._6_ ·_ 1018<br>1_._5_ ·_ 1020<br>2_._0_ ·_ 1019<br>1_._2_ ·_ 1020|\n|Deep-Att + PosUnk Ensemble [32]<br>GNMT + RL Ensemble [31]<br>ConvS2S Ensemble[8]|26.30<br>26.36|40.4<br>41.16<br>**41.29**|8_._0_ ·_ 1020<br>1_._8_ ·_ 1020<br>1_._1_ ·_ 1021<br>7_._7_ ·_ 1019<br>1_._2_ ·_ 1021|\n|Transformer (base model)<br>Transformer (big)|27.3<br>**28.4**|38.1<br>**41.0**|**3****_._3****_ ·_ 1018**<br>2_._3_ ·_ 1019|\n\n"
+    },
+    {
       "page": 9,
       "table_index": 0,
-      "table_markdown": "| train\nN d d h d d P (cid:15)\nmodel ff k v drop ls steps |\n|---|\n| 6 512 2048 8 64 64 0.1 0.1 100K |\n| 1 512 512\n4 128 128\n16 32 32\n32 16 16 |\n| 16\n32 |\n| 2\n4\n8\n256 32 32\n1024 128 128\n1024\n4096 |\n| 0.0\n0.2\n0.0\n0.2 |\n| positionalembeddinginsteadofsinusoids |\n| 6 1024 4096 16 0.3 300K |\n"
+      "table_markdown": "|Col1|train<br>N d model d ff h d k d v P drop ϵls steps|PPL BLEU params<br>(dev) (dev) ×106|\n|---|---|---|\n|base|6<br>512<br>2048<br>8<br>64<br>64<br>0.1<br>0.1<br>100K|4.92<br>25.8<br>65|\n|(A)|1<br>512<br>512<br>4<br>128<br>128<br>16<br>32<br>32<br>32<br>16<br>16|5.29<br>24.9<br>5.00<br>25.5<br>4.91<br>25.8<br>5.01<br>25.4|\n|(B)|16<br>32|5.16<br>25.1<br>58<br>5.01<br>25.4<br>60|\n|(C)|2<br>4<br>8<br>256<br>32<br>32<br>1024<br>128<br>128<br>1024<br>4096|6.11<br>23.7<br>36<br>5.19<br>25.3<br>50<br>4.88<br>25.5<br>80<br>5.75<br>24.5<br>28<br>4.66<br>26.0<br>168<br>5.12<br>25.4<br>53<br>4.75<br>26.2<br>90|\n|(D)|0.0<br>0.2<br>0.0<br>0.2|5.77<br>24.6<br>4.95<br>25.5<br>4.67<br>25.3<br>5.47<br>25.7|\n|(E)|positional embedding instead of sinusoids|4.92<br>25.7|\n|big|6<br>1024<br>4096<br>16<br>0.3<br>300K|**4.33**<br>**26.4**<br>213|\n\n"
     }
   ],
   "images": [
