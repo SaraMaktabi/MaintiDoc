@@ -16,6 +16,7 @@ dependencies = [
     "llama-index-vector-stores-chroma>=0.6.0",
     "pdfplumber>=0.11.10",
     "pillow>=13.0.0",
+    "pytesseract>=0.3.13",
     "pymupdf>=2.0",
     "sentence-transformers>=6.2.0",
     "streamlit>=1.66.1",

@@ -13,7 +13,7 @@ CHROMA_DIR = ROOT / "chroma_db"
 for _d in (DATA_DIR, RAW_DIR, IMAGES_DIR, CHROMA_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
-PDF_PATH = RAW_DIR / "attention_is_all_you_need.pdf"
+PDF_PATH = RAW_DIR / "Pompes_centrifuges_horizontales.pdf"
 
 # Collections Chroma
 COLLECTION_TEXT   = "maintidoc_text"     # texte + tableaux + descriptions d'images

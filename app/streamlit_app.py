@@ -1,8 +1,5 @@
 # app/streamlit_app.py
-"""
-Interface MaintiDoc — RAG multimodal agentique.
-Upload PDF → Extraction + Indexation → Q&A via agent LangChain.
-"""
+"""Parcours terrain : PDF → extraction → indexation → photo → OCR → question sourcée."""
 import sys
 from pathlib import Path
 
@@ -22,6 +19,10 @@ def init_state():
         st.session_state.messages = []
     if "indexed" not in st.session_state:
         st.session_state.indexed = CHROMA_DIR.exists() and any(CHROMA_DIR.iterdir())
+    if "ocr_text" not in st.session_state:
+        st.session_state.ocr_text = ""
+    if "uploaded_photo_path" not in st.session_state:
+        st.session_state.uploaded_photo_path = None
 
 
 # ---------- Actions d'indexation ----------
@@ -120,13 +121,41 @@ def render_message(msg: dict):
             render_sources(msg["tool_calls"], msg.get("question", ""))
 
 
+def render_visual_context(photo):
+    """Affiche la photo terrain et le texte OCR que le technicien peut corriger."""
+    st.subheader("📷 Contexte visuel")
+    if photo is None:
+        st.info("Ajoutez une photo d'une pièce ou d'une plaque signalétique.")
+        return
+    photo_path = RAW_DIR / "user_photo.png"
+    photo_path.write_bytes(photo.getbuffer())
+    st.session_state.uploaded_photo_path = str(photo_path)
+    st.image(photo, caption="Photo utilisateur", use_container_width=True)
+    try:
+        from maintidoc.agent import _ocr_photo
+        if not st.session_state.ocr_text:
+            detected = _ocr_photo(str(photo_path))
+            st.session_state.ocr_text = "" if detected.startswith("(OCR indisponible") else detected
+    except Exception as exc:
+        st.warning(f"OCR indisponible : {exc}")
+    st.session_state.ocr_text = st.text_area(
+        "Texte OCR (modifiable)", value=st.session_state.ocr_text,
+        key="ocr_editor", height=120,
+    )
+
+
 # ---------- Page principale ----------
 
 def main():
     st.set_page_config(page_title="MaintiDoc", page_icon="🔧", layout="wide")
     init_state()
+    st.markdown("""<style>
+    .main-title {background:linear-gradient(90deg,#125b8a,#52616b);color:white;padding:1rem 1.4rem;border-radius:12px;margin-bottom:1rem}
+    .status-ready {color:#137333;font-weight:700}.status-warn {color:#b06000;font-weight:700}
+    [data-testid="stChatMessage"] {border-radius:12px}
+    </style>""", unsafe_allow_html=True)
 
-    st.title("🔧 MaintiDoc — Assistant documentaire de maintenance")
+    st.markdown('<div class="main-title"><h1>🔧 MaintiDoc</h1><p>Assistant documentaire de maintenance — RAG multimodal agentique</p></div>', unsafe_allow_html=True)
     st.caption(
         "RAG multimodal agentique — LlamaIndex + ChromaDB + CLIP + Qwen via Ollama. "
         "Ne pilote aucun équipement et ne remplace pas un technicien habilité."
@@ -151,6 +180,8 @@ def main():
 
         if st.button("🗑️ Réinitialiser le chat", use_container_width=True):
             st.session_state.messages = []
+            st.session_state.ocr_text = ""
+            st.session_state.uploaded_photo_path = None
             st.rerun()
 
     # ----- Actions -----
@@ -162,15 +193,22 @@ def main():
         with st.spinner("Indexation LlamaIndex en cours (peut prendre 1–3 min)…"):
             run_indexing()
 
-    # ----- Chat -----
-    for msg in st.session_state.messages:
-        render_message(msg)
-
     if not st.session_state.indexed:
         st.info("Chargez un PDF, cliquez **1. Extraire** puis **2. Indexer** pour commencer.")
         return
 
+    photo = st.file_uploader("📷 Photo de la pièce ou du panneau", type=["png", "jpg", "jpeg"], key="photo_uploader")
+    left, right = st.columns([3, 2])
+    with right:
+        render_visual_context(photo)
+    with left:
+        for msg in st.session_state.messages:
+            render_message(msg)
+
     if question := st.chat_input("Posez votre question sur le document…"):
+        photo_path = st.session_state.uploaded_photo_path
+        if st.session_state.ocr_text:
+            question += f"\n\n[Texte OCR corrigé par le technicien : {st.session_state.ocr_text}]"
         st.session_state.messages.append({"role": "user", "content": question})
         render_message({"role": "user", "content": question})
 
@@ -178,7 +216,7 @@ def main():
             with st.spinner("L'agent réfléchit…"):
                 try:
                     from maintidoc.agent import answer as agent_answer
-                    result = agent_answer(question)
+                    result = agent_answer(question, photo_path=photo_path)
                     answer_text = result["answer"]
                     tool_calls = result.get("tool_calls", [])
                 except Exception as e:
@@ -202,6 +240,7 @@ def main():
             "content": answer_text,
             "tool_calls": tool_calls,
             "question": question,
+            "ocr_text": result.get("ocr_text", st.session_state.ocr_text) if 'result' in locals() else st.session_state.ocr_text,
         })
 
 

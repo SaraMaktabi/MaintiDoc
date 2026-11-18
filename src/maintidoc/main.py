@@ -78,11 +78,22 @@ def cmd_agent() -> None:
             print(f"- {tc['name']}({tc['args']})")
 
 
+def cmd_ask_photo() -> None:
+    if len(sys.argv) < 4:
+        print('Usage : uv run python -m maintidoc.main ask-photo "question" chemin/photo.jpg')
+        sys.exit(1)
+    question = " ".join(sys.argv[2:-1])
+    result = agent_answer(question, photo_path=sys.argv[-1])
+    print(result["answer"])
+    print(f"\n--- OCR ---\n{result.get('ocr_text') or '(aucun texte détecté)'}")
+
+
 COMMANDS = {
     "extract": cmd_extract,
     "index": cmd_index,
     "ask": cmd_ask,
     "agent": cmd_agent,
+    "ask-photo": cmd_ask_photo,
 }
 
 
@@ -96,6 +107,7 @@ COMMANDS = {
     "index-llama": cmd_index_llama,  # nouveau, LlamaIndex
     "ask": cmd_ask,
     "agent": cmd_agent,
+    "ask-photo": cmd_ask_photo,
 }
 
 
@@ -108,4 +120,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()  
+    main()

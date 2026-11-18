@@ -80,15 +80,26 @@ def extract_images(pdf_path: str, output_dir: Path) -> list[dict]:
     return images
 
 
-def describe_image_simple(image_meta: dict, page_text: str) -> str:
+def describe_image(image_meta: dict, page_text: str) -> str:
     """
     Description minimale : contexte textuel de la page + position.
     Évite un VLM lent ; suffit pour rendre l'image retrouvable.
     """
+    from PIL import Image
+    from transformers import BlipProcessor, BlipForConditionalGeneration
+
+    if not hasattr(describe_image, "_model"):
+        model_name = "Salesforce/blip-image-captioning-base"
+        describe_image._processor = BlipProcessor.from_pretrained(model_name)
+        describe_image._model = BlipForConditionalGeneration.from_pretrained(model_name)
+    image = Image.open(image_meta["image_path"]).convert("RGB")
+    inputs = describe_image._processor(images=image, return_tensors="pt")
+    output = describe_image._model.generate(**inputs, max_new_tokens=60)
+    caption = describe_image._processor.decode(output[0], skip_special_tokens=True).strip()
     snippet = page_text[:300].replace("\n", " ").strip()
     return (
-        f"Image extraite de la page {image_meta['page']} du document technique. "
-        f"Contexte de la page : {snippet}"
+        f"Description visuelle : {caption}. Image extraite de la page {image_meta['page']}. "
+        f"Contexte textuel de la page : {snippet}"
     )
 
 
@@ -109,9 +120,11 @@ def run_extraction() -> dict:
     # Descriptions textuelles des images (pour indexation future)
     page_text_by_num = {p["page"]: p["text"] for p in pages}
     for img in images:
-        img["description"] = describe_image_simple(
-            img, page_text_by_num.get(img["page"], "")
-        )
+        try:
+            img["description"] = describe_image(img, page_text_by_num.get(img["page"], ""))
+        except Exception as e:
+            print(f"[warn] description visuelle indisponible: {e}")
+            img["description"] = f"Image extraite de la page {img['page']}. Contexte: {page_text_by_num.get(img['page'], '')[:300]}"
 
     result = {"pages": pages, "tables": tables, "images": images}
 
